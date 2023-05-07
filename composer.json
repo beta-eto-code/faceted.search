@@ -1,0 +1,29 @@
+{
+  "name": "beta/faceted.search",
+  "description": "Faceted search",
+  "type": "lib",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Alexander Nesterov",
+      "email": "alex19pov31@gmail.com"
+    }
+  ],
+  "require": {
+    "php": ">=7.2",
+    "beta/data.provider": "^1.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "Faceted\\Search\\": "src/"
+    }
+  },
+  "require-dev": {
+    "vimeo/psalm": "^4.20",
+    "squizlabs/php_codesniffer": "^3.6"
+  },
+  "scripts": {
+    "cs": "phpcs --standard=PSR12 ./src/",
+    "analyze": "psalm --show-info=true"
+  }
+}
