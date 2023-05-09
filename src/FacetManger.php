@@ -54,7 +54,7 @@ class FacetManger implements FacetManagerInterface
         $query = null;
         if ($this->hasFacetWithId($facetId)) {
             $query = new QueryCriteria();
-            $query->addCriteria('id', CompareRuleInterface::EQUAL, $facetId);
+            $query->addCriteria($this->getPkName(), CompareRuleInterface::EQUAL, $facetId);
         }
 
         $dataForSave = [
@@ -66,9 +66,10 @@ class FacetManger implements FacetManagerInterface
 
     private function hasFacetWithId(string $facetId): bool
     {
+        $pkName = $this->getPkName();
         $query = new QueryCriteria();
-        $query->setSelect(['id']);
-        $query->addCriteria('id', CompareRuleInterface::EQUAL, $facetId);
+        $query->setSelect([$pkName]);
+        $query->addCriteria($pkName, CompareRuleInterface::EQUAL, $facetId);
         $query->setLimit(1);
         return $this->dataProvider->getDataCount($query) > 0;
     }
