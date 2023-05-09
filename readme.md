@@ -67,7 +67,15 @@ $clothFacetIndex->getCountByCompareRuleList(...$query->getCriteriaList()); // з
 
 $clothFacetIndex->getItemIdListByCompareRuleList(...$query->getCriteriaList()); // список идентификтов одежды соотвествующей критериям
 
-$clothFacetIndex->getActualPropertyValuesForCompareRuleList(...$query->getCriteriaList()); // список свойств с актуальными значениями (совместимыми с текущими критериями) и количеством позиций по кождому из значений
+$clothFacetIndex->getActualPropertyValuesForCompareRuleList(...$query->getCriteriaList()); // список свойств с актуальными значениями (совместимыми с текущими критериями) и количеством позиций по каждому из значений
 
 $clothFacetIndex->getFacetResultForCompareRuleList(...$query->getCriteriaList()); // результат аналогичен предыдущему за исключением того что возвращается объект вместо массива.
+
+$clothFacetIndex->clearFacetForItemId(1); // удаляем все данные из индекса для позиции с идентификатором 1
+
+// добавляем новый товар в индекс
+$clothFacetIndex->addItemIdForValueByProperty('color', 'red', 1);
+$clothFacetIndex->addItemIdForValueByProperty('size', 'M', 1);
+$clothFacetIndex->addItemIdForValueByProperty('gender', 'male', 1);
+$clothFacetIndex->addItemIdForValueByProperty('type', 'hat', 1);
 ```
