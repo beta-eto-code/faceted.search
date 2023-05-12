@@ -17,9 +17,33 @@ class Facet implements FacetInterface
 {
     private array $data;
 
+    /**
+     * @var string[]
+     */
+    private array $operationListForSelectMode = [
+        CompareRuleInterface::IN,
+        CompareRuleInterface::EQUAL
+    ];
+
     public function __construct(array $data = [])
     {
         $this->data = $data;
+    }
+
+    /**
+     * Используется для расчета не выбранных значений из текущего фильтра,
+     * определяются допустимые операции для данного режима
+     * @param string ...$compareOperationList
+     * @return void
+     */
+    public function setOperationForSelectMode(string ...$compareOperationList): void
+    {
+        $this->operationListForSelectMode = $compareOperationList;
+    }
+
+    public function disableSelectMode(): void
+    {
+        $this->operationListForSelectMode = [];
     }
 
     public function getValuesByProperty(string $propertyName): array
@@ -37,22 +61,22 @@ class Facet implements FacetInterface
      */
     public function getFacetResultForCompareRuleList(CompareRuleInterface ...$compareRuleList): FacetResult
     {
-        $facetResult = new FacetResult();
+        $facetResult = $this->getFacetResultForSelectMode(...$compareRuleList);
         $itemIdList = $this->getItemIdListByCompareRuleList(...$compareRuleList);
-        if (empty($itemIdList)) {
+        if (empty($itemIdList) && empty($facetResult->propertyResultList)) {
             return $facetResult;
         }
 
         foreach ($this->data as $propertyName => $valuesData) {
-            $facetPropertyResult = new FacetPropertyResult();
-            $facetPropertyResult->name = $propertyName;
-            foreach ($valuesData as $value => $itemIdList) {
-                $intersectResult = array_intersect_key($itemIdList, $itemIdList);
+            if (!empty($facetResult->getResultByProperty($propertyName))) {
+                continue;
+            }
+
+            $facetPropertyResult = $this->createPropertyResult($propertyName);
+            foreach ($valuesData as $value => $currentItemIdList) {
+                $intersectResult = array_intersect_key($itemIdList, $currentItemIdList);
                 if (!empty($intersectResult)) {
-                    $facetPropertyValueResult = new FacetPropertyValueResult();
-                    $facetPropertyValueResult->value = $value;
-                    $facetPropertyValueResult->itemIdList = $intersectResult;
-                    $facetPropertyResult->valueResultList[$value] = $facetPropertyValueResult;
+                    $this->addPropertyValueToPropertyResult($value, $intersectResult, $facetPropertyResult);
                 }
             }
 
@@ -67,23 +91,193 @@ class Facet implements FacetInterface
     /**
      * @throws Exception
      */
+    private function getFacetResultForSelectMode(CompareRuleInterface ...$compareRuleList): FacetResult
+    {
+        $facetResult = new FacetResult();
+        if ($this->selectModelIsDisabled()) {
+            return $facetResult;
+        }
+
+        foreach ($compareRuleList as $compareRule) {
+            $propertyName = $compareRule->getKey();
+            if (!$this->isKeyHasOnlySelectOperationsInCompareRuleList($propertyName, ...$compareRuleList)) {
+                continue;
+            }
+
+            $actualCompareRuleList = $this->getCompareRuleListWithExcludeRuleByKeyAndOperation(
+                $propertyName,
+                $this->getSelectOperations(),
+                ...$compareRuleList
+            );
+
+            $isEmptyCompareList = empty($actualCompareRuleList);
+            $itemIdList = $isEmptyCompareList ? [] : $this->getItemIdListByCompareRuleList(...$actualCompareRuleList);
+            if (!$isEmptyCompareList && empty($itemIdList)) {
+                return new FacetResult();
+            }
+
+            $facetPropertyResult = $this->createPropertyResult($propertyName);
+            $propertyValues = $this->data[$propertyName] ?? [];
+            foreach ($propertyValues as $value => $currentItemIdList) {
+                $intersectResult = $isEmptyCompareList ?
+                    $currentItemIdList :
+                    array_intersect_key($itemIdList, $currentItemIdList);
+                if (!empty($intersectResult)) {
+                    $this->addPropertyValueToPropertyResult($value, $intersectResult, $facetPropertyResult);
+                }
+            }
+
+            if (!empty($facetPropertyResult->valueResultList)) {
+                $facetResult->propertyResultList[$propertyName] = $facetPropertyResult;
+            }
+        }
+
+        return $facetResult;
+    }
+
+    private function createPropertyResult(string $propertyName): FacetPropertyResult
+    {
+        $facetPropertyResult = new FacetPropertyResult();
+        $facetPropertyResult->name = $propertyName;
+        return $facetPropertyResult;
+    }
+
+    /**
+     * @param mixed $value
+     * @param array $itemIdList
+     * @param FacetPropertyResult $facetPropertyResult
+     * @return void
+     */
+    private function addPropertyValueToPropertyResult(
+        $value,
+        array $itemIdList,
+        FacetPropertyResult $facetPropertyResult
+    ): void {
+        $facetPropertyResult->valueResultList[$value] = $this->createPropertyValueResult($value, $itemIdList);
+    }
+
+    /**
+     * @param mixed $value
+     * @param array $itemIdList
+     * @return FacetPropertyValueResult
+     */
+    private function createPropertyValueResult($value, array $itemIdList): FacetPropertyValueResult
+    {
+        $facetPropertyValueResult = new FacetPropertyValueResult();
+        $facetPropertyValueResult->value = $value;
+        $facetPropertyValueResult->itemIdList = $itemIdList;
+        $facetPropertyValueResult->itemsCount = count($itemIdList);
+        return $facetPropertyValueResult;
+    }
+
+    /**
+     * @throws Exception
+     */
     public function getActualPropertyValuesForCompareRuleList(CompareRuleInterface ...$compareRuleList): array
     {
+        $result = $this->getActualPropertyValuesForSelectMode(...$compareRuleList);
         $itemIdList = $this->getItemIdListByCompareRuleList(...$compareRuleList);
-        if (empty($itemIdList)) {
+        if (empty($itemIdList) && empty($result)) {
             return [];
         }
 
-        $result = [];
         foreach ($this->data as $propertyName => $valuesData) {
-            foreach ($valuesData as $value => $itemIdList) {
-                $intersectResult = array_intersect_key($itemIdList, $itemIdList);
+            if (array_key_exists($propertyName, $result)) {
+                continue;
+            }
+
+            foreach ($valuesData as $value => $currentItemIdList) {
+                $intersectResult = array_intersect_key($itemIdList, $currentItemIdList);
                 if (!empty($intersectResult)) {
                     $result[$propertyName][$value] = count($intersectResult);
                 }
             }
         }
+
         return $result;
+    }
+
+    private function getActualPropertyValuesForSelectMode(CompareRuleInterface ...$compareRuleList): array
+    {
+        if ($this->selectModelIsDisabled()) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($compareRuleList as $compareRule) {
+            $propertyName = $compareRule->getKey();
+            if (!$this->isKeyHasOnlySelectOperationsInCompareRuleList($propertyName, ...$compareRuleList)) {
+                continue;
+            }
+
+            $actualCompareRuleList = $this->getCompareRuleListWithExcludeRuleByKeyAndOperation(
+                $propertyName,
+                $this->getSelectOperations(),
+                ...$compareRuleList
+            );
+
+            $isEmptyCompareList = empty($actualCompareRuleList);
+            $itemIdList = $isEmptyCompareList ? [] : $this->getItemIdListByCompareRuleList(...$actualCompareRuleList);
+            if (!$isEmptyCompareList && empty($itemIdList)) {
+                return [];
+            }
+
+            $propertyValues = $this->data[$propertyName] ?? [];
+            foreach ($propertyValues as $value => $currentItemIdList) {
+                $intersectResult = $isEmptyCompareList ?
+                    $currentItemIdList :
+                    array_intersect_key($itemIdList, $currentItemIdList);
+                if (!empty($intersectResult)) {
+                    $result[$propertyName][$value] = count($intersectResult);
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    private function selectModelIsDisabled(): bool
+    {
+        return empty($this->operationListForSelectMode);
+    }
+
+    private function isKeyHasOnlySelectOperationsInCompareRuleList(
+        string $key,
+        CompareRuleInterface ...$compareRuleList
+    ): bool {
+        $result = false;
+        foreach ($compareRuleList as $compareRule) {
+            if ($compareRule->getKey() !== $key) {
+                continue;
+            }
+
+            $result = in_array($compareRule->getOperation(), $this->getSelectOperations());
+            if (!$result) {
+                return false;
+            }
+        }
+
+        return $result;
+    }
+
+    private function getSelectOperations(): array
+    {
+        return $this->operationListForSelectMode;
+    }
+
+    private function getCompareRuleListWithExcludeRuleByKeyAndOperation(
+        string $key,
+        array $operationList,
+        CompareRuleInterface ...$compareRuleList
+    ): array {
+        $newCompareRuleList = [];
+        foreach ($compareRuleList as $compareRule) {
+            if ($compareRule->getKey() === $key && in_array($compareRule->getOperation(), $operationList)) {
+                continue;
+            }
+            $newCompareRuleList[] = $compareRule;
+        }
+        return $newCompareRuleList;
     }
 
     /**
@@ -103,14 +297,30 @@ class Facet implements FacetInterface
     {
         $resultItemIdList = [];
         foreach ($compareRuleList as $compareRule) {
-            $itemIdList = $this->getItemIdListForProperty($compareRule);
-            if (empty($itemIdList)) {
+            $resultItemIdList = $this->getItemIdListByCompareRule($compareRule, $resultItemIdList);
+            if (empty($resultItemIdList)) {
                 return [];
             }
-
-            $resultItemIdList = array_intersect_key($resultItemIdList, $itemIdList);
         }
+
         return $resultItemIdList;
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function getItemIdListByCompareRule(CompareRuleInterface $compareRule, array $currentIdList = []): array
+    {
+        $itemIdList = $this->getItemIdListForProperty($compareRule);
+        if (empty($itemIdList)) {
+            return [];
+        }
+
+        if (empty($currentIdList)) {
+            return $itemIdList;
+        }
+
+        return array_intersect_key($currentIdList, $itemIdList);
     }
 
     /**
@@ -184,6 +394,11 @@ class Facet implements FacetInterface
             $andItemIdList = $this->getItemIdListForProperty($compareRule);
             if (empty($andItemIdList)) {
                 return [];
+            }
+
+            if (empty($resultItemIdList)) {
+                $resultItemIdList = $andItemIdList;
+                continue;
             }
 
             $resultItemIdList = array_intersect_key($resultItemIdList, $andItemIdList);
@@ -261,14 +476,21 @@ class Facet implements FacetInterface
         return $resultItemIdList;
     }
 
+    /**
+     * @param mixed $itemId
+     * @param bool $strictMode
+     * @return void
+     */
     public function clearFacetForItemId($itemId, bool $strictMode = false): void
     {
         foreach ($this->data as &$propertyValues) {
-            foreach ($propertyValues as $key => $currentItemId) {
-                if ($strictMode && $currentItemId === $itemId) {
-                    unset($propertyValues[$key]);
-                } elseif ($currentItemId == $itemId) {
-                    unset($propertyValues[$key]);
+            foreach ($propertyValues as &$itemIdList) {
+                foreach ($itemIdList as $key => $currentItemId) {
+                    if ($strictMode && $currentItemId === $itemId) {
+                        unset($itemIdList[$key]);
+                    } elseif ($currentItemId == $itemId) {
+                        unset($itemIdList[$key]);
+                    }
                 }
             }
         }
@@ -286,7 +508,7 @@ class Facet implements FacetInterface
             $this->data[$propertyName][$value] = [];
         }
 
-        $this->data[$propertyName][$value][(string)$itemId] = $itemId;
+        $this->data[$propertyName][$value]['_' . (string)$itemId] = $itemId;
     }
 
     public function jsonSerialize(): array
