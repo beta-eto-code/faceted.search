@@ -3,6 +3,8 @@
 namespace Faceted\Search\Interfaces;
 
 use Data\Provider\Interfaces\DataProviderInterface;
+use Data\Provider\Interfaces\QueryCriteriaInterface;
+use Data\Provider\QueryCriteria;
 
 interface FacetBuilderInterface
 {
@@ -17,6 +19,8 @@ interface FacetBuilderInterface
     ): FacetBuilderInterface;
 
     public function setLimitByStepIndex(int $limit): FacetBuilderInterface;
+
+    public function setQuery(QueryCriteriaInterface $query): FacetBuilderInterface;
 
     public function build(): FacetInterface;
 }

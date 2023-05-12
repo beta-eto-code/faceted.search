@@ -3,6 +3,7 @@
 namespace Faceted\Search;
 
 use Data\Provider\Interfaces\DataProviderInterface;
+use Data\Provider\Interfaces\QueryCriteriaInterface;
 use Data\Provider\QueryCriteria;
 use Exception;
 use Faceted\Search\Interfaces\FacetBuilderInterface;
@@ -18,6 +19,7 @@ class FacetBuilder implements FacetBuilderInterface
      */
     private array $properties = [];
     private int $stepLimit = 0;
+    private ?QueryCriteriaInterface $query = null;
 
     public static function init(DataProviderInterface $dataProvider): FacetBuilderInterface
     {
@@ -65,7 +67,7 @@ class FacetBuilder implements FacetBuilderInterface
             throw new Exception('Не указаны свойства для индексирования');
         }
 
-        $query = new QueryCriteria();
+        $query = $this->query ?? new QueryCriteria();
         if ($this->stepLimit > 0) {
             $query->setLimit($this->stepLimit);
         }
@@ -89,5 +91,11 @@ class FacetBuilder implements FacetBuilderInterface
             $query->setOffset($query->getOffset() + $this->stepLimit);
         } while ($this->stepLimit > 0 && count($dataList) === $this->stepLimit);
         return $facet;
+    }
+
+    public function setQuery(QueryCriteriaInterface $query): FacetBuilderInterface
+    {
+        $this->query = $query;
+        return $this;
     }
 }
