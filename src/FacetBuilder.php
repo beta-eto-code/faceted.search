@@ -7,6 +7,7 @@ use Data\Provider\Interfaces\QueryCriteriaInterface;
 use Data\Provider\QueryCriteria;
 use Exception;
 use Faceted\Search\Interfaces\FacetBuilderInterface;
+use Faceted\Search\Interfaces\FacetExtraDataProcessorInterface;
 use Faceted\Search\Interfaces\FacetInterface;
 
 class FacetBuilder implements FacetBuilderInterface
@@ -20,6 +21,7 @@ class FacetBuilder implements FacetBuilderInterface
     private array $properties = [];
     private int $stepLimit = 0;
     private ?QueryCriteriaInterface $query = null;
+    private ?FacetExtraDataProcessorInterface $extraDataProcessor = null;
 
     public static function init(DataProviderInterface $dataProvider): FacetBuilderInterface
     {
@@ -76,6 +78,7 @@ class FacetBuilder implements FacetBuilderInterface
         do {
             $dataList = $this->dataProvider->getData($query);
             foreach ($dataList as $data) {
+                $this->updateExtraData($data);
                 foreach ($this->properties as $propertyName => $property) {
                     $id = $data[$this->idKey] ?? null;
                     if (is_null($id)) {
@@ -97,5 +100,19 @@ class FacetBuilder implements FacetBuilderInterface
     {
         $this->query = $query;
         return $this;
+    }
+
+    public function setFacetExtraDataProcessor(
+        FacetExtraDataProcessorInterface $extraDataProcessor
+    ): FacetBuilderInterface {
+        $this->extraDataProcessor = $extraDataProcessor;
+        return $this;
+    }
+
+    private function updateExtraData(array $data): void
+    {
+        if ($this->extraDataProcessor instanceof FacetExtraDataProcessorInterface) {
+            $this->extraDataProcessor->processData($data);
+        }
     }
 }

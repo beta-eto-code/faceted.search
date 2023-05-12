@@ -3,6 +3,7 @@
 namespace Faceted\Search;
 
 use Data\Provider\Providers\ArrayDataProvider;
+use Faceted\Search\Interfaces\FacetExtraDataInterface;
 use PHPUnit\Framework\TestCase;
 
 class FacetBuilderTest extends TestCase
@@ -110,6 +111,18 @@ class FacetBuilderTest extends TestCase
             ]
         ], $facet->jsonSerialize());
 
+        $facetExtraData = new FacetExtraData();
+        $facetExtraDataProcessor = new FacetExtraDataProcessor($facetExtraData);
+        $facetExtraDataProcessor->registerHandler(function (
+            array $data,
+            FacetExtraDataInterface $facetExtraData
+        ): void {
+            $color = $data['color'] ?? '';
+            if (!empty($color)) {
+                $facetExtraData->setDataForPropertyValue('color', $color, "Цвет: $color");
+            }
+        });
+
         $colorMap = [
             'white' => 'белый',
             'blue' => 'синий',
@@ -119,6 +132,7 @@ class FacetBuilderTest extends TestCase
 
         $facet = FacetBuilder::init($dataProvider)
             ->setItemIdKey('id')
+            ->setFacetExtraDataProcessor($facetExtraDataProcessor)
             ->registerProperty('цвет', null, function (array $itemData) use ($colorMap): string {
                 $color = $itemData['color'] ?? 'undefined';
                 return $colorMap[$color] ?? $color;
@@ -132,5 +146,13 @@ class FacetBuilderTest extends TestCase
                 'красный' => ['_7' => 7, '_8' => 8, '_9' => 9, '_10' => 10],
             ]
         ], $facet->jsonSerialize());
+
+        $this->assertEquals([
+            'color' => [
+                'white' => 'Цвет: white',
+                'blue' => 'Цвет: blue',
+                'red' => 'Цвет: red',
+            ]
+        ], $facetExtraData->jsonSerialize());
     }
 }
