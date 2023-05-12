@@ -58,6 +58,7 @@ class FacetManger implements FacetManagerInterface
         }
 
         $dataForSave = [
+            $this->getPkName() => $facetId,
             'data' => json_encode($facet->jsonSerialize(), JSON_UNESCAPED_UNICODE),
         ];
 
