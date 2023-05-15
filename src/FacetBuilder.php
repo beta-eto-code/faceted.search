@@ -13,7 +13,7 @@ use Faceted\Search\Interfaces\FacetInterface;
 class FacetBuilder implements FacetBuilderInterface
 {
     private DataProviderInterface $dataProvider;
-
+    private int $itemsCountProccessed = 0;
     private string $idKey = 'id';
     /**
      * @var array<string, callable>
@@ -35,6 +35,12 @@ class FacetBuilder implements FacetBuilderInterface
     private function __construct(DataProviderInterface $dataProvider)
     {
         $this->dataProvider = $dataProvider;
+        $this->itemsCountProccessed = 0;
+    }
+
+    public function getCountItemsProccessed(): int
+    {
+        return $this->itemsCountProccessed;
     }
 
     public function setValueHandler(callable $handler): FacetBuilderInterface
@@ -75,6 +81,7 @@ class FacetBuilder implements FacetBuilderInterface
      */
     public function build(): FacetInterface
     {
+        $this->itemsCountProccessed = 0;
         if (empty($this->properties)) {
             throw new Exception('Не указаны свойства для индексирования');
         }
@@ -88,6 +95,7 @@ class FacetBuilder implements FacetBuilderInterface
         do {
             $dataList = $this->dataProvider->getData($query);
             foreach ($dataList as $data) {
+                $this->itemsCountProccessed++;
                 $this->updateExtraData($data);
                 foreach ($this->properties as $propertyName => $property) {
                     $id = $data[$this->idKey] ?? null;

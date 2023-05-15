@@ -27,5 +27,7 @@ interface FacetBuilderInterface
 
     public function setValueHandler(callable $handler): FacetBuilderInterface;
 
+    public function getCountItemsProccessed(): int;
+
     public function build(): FacetInterface;
 }
