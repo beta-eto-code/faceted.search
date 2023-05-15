@@ -28,7 +28,7 @@ class FacetPropertyResult
     {
         $pkList = [];
         foreach ($this->valueResultList as $valueResult) {
-            $pkList = array_merge($pkList, $valueResult->itemIdList);
+            $pkList = array_merge($pkList, $valueResult->getActualItemIdList());
         }
         return $pkList;
     }

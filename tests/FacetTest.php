@@ -41,13 +41,13 @@ class FacetTest extends TestCase
     /**
      * @throws Exception
      */
-    public function testGetActualPropertyValuesForCompareRuleList()
+    public function testGetActualPropertyValuesForCompareRuleListWithCount()
     {
         $facet = new Facet(static::FACET_DATA);
 
         $query = new QueryCriteria();
         $query->addCriteria('gender', CompareRuleInterface::EQUAL, 'female');
-        $dataResult = $facet->getActualPropertyValuesForCompareRuleList(...$query->getCriteriaList());
+        $dataResult = $facet->getActualPropertyValuesForCompareRuleListWithCount(...$query->getCriteriaList());
         $this->assertEquals([
             'color' => [
                 'white' => 1,
@@ -72,7 +72,7 @@ class FacetTest extends TestCase
         ], $dataResult);
 
         $facet->disableSelectMode();
-        $dataResult = $facet->getActualPropertyValuesForCompareRuleList(...$query->getCriteriaList());
+        $dataResult = $facet->getActualPropertyValuesForCompareRuleListWithCount(...$query->getCriteriaList());
         $this->assertEquals([
             'color' => [
                 'white' => 1,
@@ -98,7 +98,7 @@ class FacetTest extends TestCase
 
         $query->addCriteria('size', CompareRuleInterface::IN, ['S', 'M']);
         $facet->setOperationForSelectMode(CompareRuleInterface::EQUAL, CompareRuleInterface::IN);
-        $dataResult = $facet->getActualPropertyValuesForCompareRuleList(...$query->getCriteriaList());
+        $dataResult = $facet->getActualPropertyValuesForCompareRuleListWithCount(...$query->getCriteriaList());
         $this->assertEquals([
             'color' => [
                 'white' => 1,
@@ -122,7 +122,7 @@ class FacetTest extends TestCase
         ], $dataResult);
 
         $facet->disableSelectMode();
-        $dataResult = $facet->getActualPropertyValuesForCompareRuleList(...$query->getCriteriaList());
+        $dataResult = $facet->getActualPropertyValuesForCompareRuleListWithCount(...$query->getCriteriaList());
         $this->assertEquals([
             'color' => [
                 'white' => 1,
@@ -139,6 +139,112 @@ class FacetTest extends TestCase
             ],
             'gender' => [
                 'female' => 3,
+            ],
+            'pk' => ['_3' => 3, '_4' => 4, '_7' => 7]
+        ], $dataResult);
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function testGetActualPropertyValuesForCompareRuleList()
+    {
+        $facet = new Facet(static::FACET_DATA);
+
+        $query = new QueryCriteria();
+        $query->addCriteria('gender', CompareRuleInterface::EQUAL, 'female');
+        $dataResult = $facet->getActualPropertyValuesForCompareRuleList(...$query->getCriteriaList());
+        $this->assertEquals([
+            'color' => [
+                'white' => 'white',
+                'blue' => 'blue',
+                'red' => 'red',
+            ],
+            'size' => [
+                'S' => 'S',
+                'M' => 'M',
+                'L' => 'L',
+            ],
+            'type' => [
+                'hat' => 'hat',
+                'pants' => 'pants',
+                't-shirt' => 't-shirt',
+            ],
+            'gender' => [
+                'male' => 'male',
+                'female' => 'female',
+            ],
+            'pk' => ['_3' => 3, '_4' => 4, '_8' => 8, '_9' => 9, '_7' => 7]
+        ], $dataResult);
+
+        $facet->disableSelectMode();
+        $dataResult = $facet->getActualPropertyValuesForCompareRuleList(...$query->getCriteriaList());
+        $this->assertEquals([
+            'color' => [
+                'white' => 'white',
+                'blue' => 'blue',
+                'red' => 'red',
+            ],
+            'size' => [
+                'S' => 'S',
+                'M' => 'M',
+                'L' => 'L',
+            ],
+            'type' => [
+                'hat' => 'hat',
+                'pants' => 'pants',
+                't-shirt' => 't-shirt',
+            ],
+            'gender' => [
+                'female' => 'female',
+            ],
+            'pk' => ['_3' => 3, '_4' => 4, '_8' => 8, '_9' => 9, '_7' => 7]
+        ], $dataResult);
+
+
+        $query->addCriteria('size', CompareRuleInterface::IN, ['S', 'M']);
+        $facet->setOperationForSelectMode(CompareRuleInterface::EQUAL, CompareRuleInterface::IN);
+        $dataResult = $facet->getActualPropertyValuesForCompareRuleList(...$query->getCriteriaList());
+        $this->assertEquals([
+            'color' => [
+                'white' => 'white',
+                'blue' => 'blue',
+                'red' => 'red',
+            ],
+            'size' => [
+                'S' => 'S',
+                'M' => 'M',
+                'L' => 'L',
+            ],
+            'type' => [
+                'pants' => 'pants',
+                't-shirt' => 't-shirt',
+            ],
+            'gender' => [
+                'male' => 'male',
+                'female' => 'female',
+            ],
+            'pk' => ['_3' => 3, '_4' => 4, '_7' => 7]
+        ], $dataResult);
+
+        $facet->disableSelectMode();
+        $dataResult = $facet->getActualPropertyValuesForCompareRuleList(...$query->getCriteriaList());
+        $this->assertEquals([
+            'color' => [
+                'white' => 'white',
+                'blue' => 'blue',
+                'red' => 'red',
+            ],
+            'size' => [
+                'S' => 'S',
+                'M' => 'M',
+            ],
+            'type' => [
+                'pants' => 'pants',
+                't-shirt' => 't-shirt',
+            ],
+            'gender' => [
+                'female' => 'female',
             ],
             'pk' => ['_3' => 3, '_4' => 4, '_7' => 7]
         ], $dataResult);
@@ -308,8 +414,8 @@ class FacetTest extends TestCase
     ): void {
         $propertyResult = $facetResult->getResultByProperty($propertyName);
         $valuePropertyResult = $propertyResult->getResultByValue($value);
-        $this->assertEquals(count($itemIdList), $valuePropertyResult->itemsCount);
-        $this->assertEquals($itemIdList, $valuePropertyResult->itemIdList);
+        $this->assertEquals(count($itemIdList), $valuePropertyResult->getActualCount());
+        $this->assertEquals($itemIdList, $valuePropertyResult->getActualItemIdList());
     }
 
     /**

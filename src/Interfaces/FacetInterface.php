@@ -20,6 +20,12 @@ interface FacetInterface extends JsonSerializable
      */
     public function getActualPropertyValuesForCompareRuleList(CompareRuleInterface ...$compareRuleList): array;
 
+    /**
+     * @param CompareRuleInterface ...$compareRuleList
+     * @return array<string, array>
+     */
+    public function getActualPropertyValuesForCompareRuleListWithCount(CompareRuleInterface ...$compareRuleList): array;
+
     public function getFacetResultForCompareRuleList(CompareRuleInterface ...$compareRuleList): FacetResult;
 
     /**
