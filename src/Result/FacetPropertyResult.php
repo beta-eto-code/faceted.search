@@ -23,4 +23,18 @@ class FacetPropertyResult
         }
         return null;
     }
+
+    public function getPkList(): array
+    {
+        $pkList = [];
+        foreach ($this->valueResultList as $valueResult) {
+            $pkList = array_merge($pkList, $valueResult->itemIdList);
+        }
+        return $pkList;
+    }
+
+    public function getValues(): array
+    {
+        return array_keys($this->valueResultList);
+    }
 }

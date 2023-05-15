@@ -8,6 +8,13 @@ class FacetResult
      * @var FacetPropertyResult[]
      */
     public array $propertyResultList = [];
+    public array $pkList = [];
+
+    public function getPropertyValues(string $propertyName): array
+    {
+        $propetyResult = $this->getResultByProperty($propertyName);
+        return $propetyResult instanceof FacetPropertyResult ? $propetyResult->getValues() : [];
+    }
 
     public function getResultByProperty(string $propertyName): ?FacetPropertyResult
     {

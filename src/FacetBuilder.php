@@ -22,6 +22,10 @@ class FacetBuilder implements FacetBuilderInterface
     private int $stepLimit = 0;
     private ?QueryCriteriaInterface $query = null;
     private ?FacetExtraDataProcessorInterface $extraDataProcessor = null;
+    /**
+     * @var callable|null
+     */
+    private $valueHandler = null;
 
     public static function init(DataProviderInterface $dataProvider): FacetBuilderInterface
     {
@@ -31,6 +35,12 @@ class FacetBuilder implements FacetBuilderInterface
     private function __construct(DataProviderInterface $dataProvider)
     {
         $this->dataProvider = $dataProvider;
+    }
+
+    public function setValueHandler(callable $handler): FacetBuilderInterface
+    {
+        $this->valueHandler = $handler;
+        return $this;
     }
 
     public function setItemIdKey(string $idKey): FacetBuilderInterface
@@ -86,6 +96,7 @@ class FacetBuilder implements FacetBuilderInterface
                     }
 
                     $value = $property($data);
+                    $value = is_callable($this->valueHandler) ? ($this->valueHandler)($value) : $value;
                     if (!is_null($value) && is_scalar($id)) {
                         $facet->addItemIdForValueByProperty($propertyName, $value, $id);
                     }

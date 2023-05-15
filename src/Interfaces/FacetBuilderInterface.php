@@ -25,5 +25,7 @@ interface FacetBuilderInterface
         FacetExtraDataProcessorInterface $extraDataProcessor
     ): FacetBuilderInterface;
 
+    public function setValueHandler(callable $handler): FacetBuilderInterface;
+
     public function build(): FacetInterface;
 }

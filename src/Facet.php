@@ -61,6 +61,7 @@ class Facet implements FacetInterface
      */
     public function getFacetResultForCompareRuleList(CompareRuleInterface ...$compareRuleList): FacetResult
     {
+        $resultItemIdList = [];
         $facetResult = $this->getFacetResultForSelectMode(...$compareRuleList);
         $itemIdList = $this->getItemIdListByCompareRuleList(...$compareRuleList);
         if (empty($itemIdList) && empty($facetResult->propertyResultList)) {
@@ -77,6 +78,7 @@ class Facet implements FacetInterface
                 $intersectResult = array_intersect_key($itemIdList, $currentItemIdList);
                 if (!empty($intersectResult)) {
                     $this->addPropertyValueToPropertyResult($value, $intersectResult, $facetPropertyResult);
+                    $resultItemIdList = array_merge($resultItemIdList, $intersectResult);
                 }
             }
 
@@ -85,6 +87,7 @@ class Facet implements FacetInterface
             }
         }
 
+        $facetResult->pkList = $resultItemIdList;
         return $facetResult;
     }
 
@@ -93,6 +96,7 @@ class Facet implements FacetInterface
      */
     private function getFacetResultForSelectMode(CompareRuleInterface ...$compareRuleList): FacetResult
     {
+        $resultItemIdList = [];
         $facetResult = new FacetResult();
         if ($this->selectModelIsDisabled()) {
             return $facetResult;
@@ -124,6 +128,7 @@ class Facet implements FacetInterface
                     array_intersect_key($itemIdList, $currentItemIdList);
                 if (!empty($intersectResult)) {
                     $this->addPropertyValueToPropertyResult($value, $intersectResult, $facetPropertyResult);
+                    $resultItemIdList = array_merge($resultItemIdList, $intersectResult);
                 }
             }
 
@@ -132,6 +137,7 @@ class Facet implements FacetInterface
             }
         }
 
+        $facetResult->pkList = $resultItemIdList;
         return $facetResult;
     }
 
@@ -175,6 +181,7 @@ class Facet implements FacetInterface
      */
     public function getActualPropertyValuesForCompareRuleList(CompareRuleInterface ...$compareRuleList): array
     {
+        $resultItemIdList = [];
         $result = $this->getActualPropertyValuesForSelectMode(...$compareRuleList);
         $itemIdList = $this->getItemIdListByCompareRuleList(...$compareRuleList);
         if (empty($itemIdList) && empty($result)) {
@@ -190,10 +197,12 @@ class Facet implements FacetInterface
                 $intersectResult = array_intersect_key($itemIdList, $currentItemIdList);
                 if (!empty($intersectResult)) {
                     $result[$propertyName][$value] = count($intersectResult);
+                    $resultItemIdList = array_merge($resultItemIdList, $intersectResult);
                 }
             }
         }
 
+        $result['pk'] = $resultItemIdList;
         return $result;
     }
 
@@ -204,6 +213,7 @@ class Facet implements FacetInterface
         }
 
         $result = [];
+        $resultItemIdList = [];
         foreach ($compareRuleList as $compareRule) {
             $propertyName = $compareRule->getKey();
             if (!$this->isKeyHasOnlySelectOperationsInCompareRuleList($propertyName, ...$compareRuleList)) {
@@ -229,10 +239,12 @@ class Facet implements FacetInterface
                     array_intersect_key($itemIdList, $currentItemIdList);
                 if (!empty($intersectResult)) {
                     $result[$propertyName][$value] = count($intersectResult);
+                    $resultItemIdList = array_merge($resultItemIdList, $intersectResult);
                 }
             }
         }
 
+        $result['pk'] = $resultItemIdList;
         return $result;
     }
 
@@ -402,6 +414,9 @@ class Facet implements FacetInterface
             }
 
             $resultItemIdList = array_intersect_key($resultItemIdList, $andItemIdList);
+            if (empty($resultItemIdList)) {
+                return [];
+            }
         }
         return $resultItemIdList;
     }

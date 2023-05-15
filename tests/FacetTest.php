@@ -67,7 +67,8 @@ class FacetTest extends TestCase
             'gender' => [
                 'male' => 5,
                 'female' => 5,
-            ]
+            ],
+            'pk' => ['_3' => 3, '_4' => 4, '_8' => 8, '_9' => 9, '_7' => 7]
         ], $dataResult);
 
         $facet->disableSelectMode();
@@ -90,7 +91,8 @@ class FacetTest extends TestCase
             ],
             'gender' => [
                 'female' => 5,
-            ]
+            ],
+            'pk' => ['_3' => 3, '_4' => 4, '_8' => 8, '_9' => 9, '_7' => 7]
         ], $dataResult);
 
 
@@ -115,7 +117,8 @@ class FacetTest extends TestCase
             'gender' => [
                 'male' => 3,
                 'female' => 3,
-            ]
+            ],
+            'pk' => ['_3' => 3, '_4' => 4, '_7' => 7]
         ], $dataResult);
 
         $facet->disableSelectMode();
@@ -136,7 +139,8 @@ class FacetTest extends TestCase
             ],
             'gender' => [
                 'female' => 3,
-            ]
+            ],
+            'pk' => ['_3' => 3, '_4' => 4, '_7' => 7]
         ], $dataResult);
     }
 
